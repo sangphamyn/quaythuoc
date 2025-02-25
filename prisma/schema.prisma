@@ -1,0 +1,293 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+// Người dùng (Chủ và Nhân viên)
+model User {
+  id              Int               @id @default(autoincrement())
+  username        String            @unique
+  password        String
+  fullName        String
+  role            UserRole
+  email           String?
+  phone           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  invoices        Invoice[]         // Hóa đơn mà nhân viên đã tạo
+  purchaseOrders  PurchaseOrder[]   // Phiếu nhập hàng đã tạo
+  transactions    Transaction[]     // Các giao dịch thu chi đã tạo
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+// Tủ thuốc
+model Cabinet {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  rows        Row[]     // Các hàng trong tủ
+}
+
+// Hàng trong tủ
+model Row {
+  id            Int           @id @default(autoincrement())
+  cabinetId     Int
+  cabinet       Cabinet       @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  compartments  Compartment[] // Các ngăn trong hàng
+}
+
+// Ngăn trong hàng
+model Compartment {
+  id          Int         @id @default(autoincrement())
+  rowId       Int
+  row         Row         @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  products    Product[]   // Các sản phẩm được đặt trong ngăn này
+}
+
+// Danh mục sản phẩm
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String
+  parentId    Int?
+  parent      Category?   @relation("CategoryToSubcategory", fields: [parentId], references: [id])
+  subcategories Category[] @relation("CategoryToSubcategory")
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  products    Product[]   // Các sản phẩm thuộc danh mục này
+}
+
+// Đơn vị tính
+model Unit {
+  id            Int           @id @default(autoincrement())
+  name          String
+  description   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  productUnits  ProductUnit[] // Các đơn vị tính cho sản phẩm
+}
+
+// Đường dùng thuốc
+model UsageRoute {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  products    Product[]   // Các sản phẩm sử dụng đường dùng này
+}
+
+// Sản phẩm
+model Product {
+  id                Int               @id @default(autoincrement())
+  code              String            @unique
+  name              String
+  categoryId        Int
+  category          Category          @relation(fields: [categoryId], references: [id])
+  usageRouteId      Int?
+  usageRoute        UsageRoute?       @relation(fields: [usageRouteId], references: [id])
+  description       String?
+  image             String?
+  compartmentId     Int?
+  compartment       Compartment?      @relation(fields: [compartmentId], references: [id])
+  baseUnitId        Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  productUnits      ProductUnit[]     // Các đơn vị tính của sản phẩm
+  inventoryItems    Inventory[]       // Tồn kho của sản phẩm
+  purchaseItems     PurchaseOrderItem[] // Chi tiết nhập hàng
+  invoiceItems      InvoiceItem[]     // Chi tiết hóa đơn
+}
+
+// Đơn vị tính cho từng sản phẩm
+model ProductUnit {
+  id                Int               @id @default(autoincrement())
+  productId         Int
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unitId            Int
+  unit              Unit              @relation(fields: [unitId], references: [id])
+  conversionFactor  Float             // Hệ số quy đổi so với đơn vị cơ bản
+  costPrice         Float             // Giá vốn theo đơn vị này
+  sellingPrice      Float             // Giá bán theo đơn vị này
+  isBaseUnit        Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  inventoryItems    Inventory[]       // Tồn kho theo đơn vị này
+  purchaseItems     PurchaseOrderItem[] // Chi tiết nhập hàng theo đơn vị này
+  invoiceItems      InvoiceItem[]     // Chi tiết hóa đơn theo đơn vị này
+
+  @@unique([productId, unitId])
+}
+
+// Nhà cung cấp
+model Supplier {
+  id              Int             @id @default(autoincrement())
+  name            String
+  address         String?
+  phone           String?
+  email           String?
+  contactPerson   String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  purchaseOrders  PurchaseOrder[] // Các phiếu nhập hàng từ nhà cung cấp này
+}
+
+// Phiếu nhập hàng
+model PurchaseOrder {
+  id              Int                 @id @default(autoincrement())
+  code            String              @unique
+  supplierId      Int
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
+  userId          Int
+  user            User                @relation(fields: [userId], references: [id])
+  orderDate       DateTime
+  totalAmount     Float
+  paymentStatus   PaymentStatus
+  paymentMethod   PaymentMethod
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  items           PurchaseOrderItem[] // Chi tiết nhập hàng
+  transactions    Transaction[]       // Các giao dịch liên quan
+}
+
+// Chi tiết phiếu nhập hàng
+model PurchaseOrderItem {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id])
+  productUnitId   Int
+  productUnit     ProductUnit   @relation(fields: [productUnitId], references: [id])
+  quantity        Float
+  costPrice       Float
+  expiryDate      DateTime?
+  batchNumber     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// Tồn kho
+model Inventory {
+  id              Int           @id @default(autoincrement())
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id])
+  productUnitId   Int
+  productUnit     ProductUnit   @relation(fields: [productUnitId], references: [id])
+  quantity        Float
+  batchNumber     String?
+  expiryDate      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([productId, productUnitId, batchNumber, expiryDate])
+}
+
+// Hóa đơn bán hàng
+model Invoice {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique
+  customerName    String?
+  customerPhone   String?
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id])
+  invoiceDate     DateTime
+  totalAmount     Float
+  discount        Float         @default(0)
+  finalAmount     Float
+  paymentMethod   PaymentMethod
+  status          InvoiceStatus
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           InvoiceItem[] // Chi tiết hóa đơn
+  transactions    Transaction[] // Các giao dịch liên quan
+}
+
+// Chi tiết hóa đơn
+model InvoiceItem {
+  id              Int           @id @default(autoincrement())
+  invoiceId       Int
+  invoice         Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id])
+  productUnitId   Int
+  productUnit     ProductUnit   @relation(fields: [productUnitId], references: [id])
+  quantity        Float
+  unitPrice       Float
+  amount          Float
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// Thu chi
+model Transaction {
+  id              Int                 @id @default(autoincrement())
+  date            DateTime
+  type            TransactionType
+  amount          Float
+  description     String
+  userId          Int
+  user            User                @relation(fields: [userId], references: [id])
+  relatedId       Int?
+  relatedType     TransactionRelatedType?
+  invoice         Invoice?            @relation(fields: [invoiceId], references: [id])
+  invoiceId       Int?
+  purchaseOrder   PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIAL
+  UNPAID
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CREDIT
+}
+
+enum InvoiceStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionRelatedType {
+  INVOICE
+  PURCHASE
+  OTHER
+}
