@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { ActionFunctionArgs, json, MetaFunction } from "@remix-run/node";
-import { Form, useActionData, useNavigation, Link } from "@remix-run/react";
+import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { UserRole } from "@prisma/client";
 import { AuthService } from "~/utils/auth.server";
 import { motion } from "framer-motion";
+import { getUserRole } from "~/utils/session.server";
 
 interface ActionErrors {
   username?: string;
@@ -15,14 +16,14 @@ interface ActionErrors {
 type ActionData = {
   errors?: ActionErrors;
 };
-
-export const meta: MetaFunction = () => {
-  return [
-    { title: "Đăng nhập - Pharmacy Management System" },
-    { name: "description", content: "Đăng nhập vào hệ thống quản lý quầy thuốc" }
-  ];
+export let loader = async ({ request }: LoaderFunctionArgs) => {
+  if (await getUserRole(request) == 'ADMIN') {
+    return redirect("/admin");
+  } else if (await getUserRole(request) == 'STAFF') {
+    return redirect("/pos");
+  }
+  return {};
 };
-
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const username = formData.get("username") as string | null;
@@ -31,9 +32,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Validate form
   const errors: ActionErrors = {};
-  if (!username) errors.username = "Username là bắt buộc";
-  if (!password) errors.password = "Password là bắt buộc";
-  if (!role) errors.role = "Vui lòng chọn vai trò đăng nhập";
+  if (!username) errors.username = "Cần điền tên đăng nhập";
+  if (!password) errors.password = "Cần điền mật khẩu";
 
   // Return errors if any
   if (Object.keys(errors).length > 0) {
@@ -42,11 +42,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     // Xử lý đăng nhập với AuthService
-    console.log(await AuthService.authenticate({
-      username: username!,
-      password: password!,
-      role: role!,
-    }));
     return await AuthService.authenticate({
       username: username!,
       password: password!,
@@ -63,7 +58,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Login() {
   const actionData = useActionData<ActionData>();
-  console.log('actionData', actionData);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   
@@ -114,7 +108,7 @@ export default function Login() {
               transition={{ delay: 0.4, duration: 0.5 }}
               className="text-3xl font-bold text-gray-800 tracking-tight"
             >
-              Pharmacy Management
+              Smart thuốc
             </motion.h2>
             <motion.p
               initial={{ opacity: 0 }}
@@ -223,7 +217,6 @@ export default function Login() {
                 <div className="text-sm font-medium text-gray-700 mb-2">Đăng nhập với vai trò</div>
                 <div className="grid grid-cols-2 gap-4">
                   <motion.button
-                    whileTap={{ scale: 0.97 }}
                     type="submit"
                     disabled={isSubmitting}
                     onClick={() => setSelectedRole(UserRole.ADMIN)}
@@ -255,7 +248,6 @@ export default function Login() {
                   </motion.button>
                   
                   <motion.button
-                    whileTap={{ scale: 0.97 }}
                     type="submit"
                     disabled={isSubmitting}
                     onClick={() => setSelectedRole(UserRole.STAFF)}
@@ -286,27 +278,6 @@ export default function Login() {
                     )}
                   </motion.button>
                 </div>
-              </div>
-
-              <div>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isSubmitting || !selectedRole}
-                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm 
-                    text-sm font-medium text-white ${selectedRole 
-                    ? 'bg-indigo-600 hover:bg-indigo-700  focus:ring-indigo-500' 
-                    : 'bg-gray-400 cursor-not-allowed'} transition-colors duration-200`}
-                >
-                  {isSubmitting ? (
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    "Đăng nhập"
-                  )}
-                </motion.button>
               </div>
             </Form>
           </motion.div>

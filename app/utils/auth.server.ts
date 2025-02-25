@@ -64,7 +64,7 @@ export class AuthService {
         return {
           success: false,
           errors: {
-            role: `Bạn không có quyền truy cập với vai trò ${role}`
+            role: `Bạn không có quyền truy cập với vai trò ${role == 'ADMIN' ? 'Quản trị viên' : 'Nhân viên'}`
           }
         };
       }

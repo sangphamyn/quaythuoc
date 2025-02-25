@@ -1,6 +1,7 @@
 
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useNavigation } from "@remix-run/react";
+import { filter } from "framer-motion/client";
 import { useState } from "react";
 import { db } from "~/utils/db.server";
 
@@ -9,6 +10,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchTerm = url.searchParams.get("search") || "";
   const categoryId = url.searchParams.get("category") || "";
   const pageParam = url.searchParams.get("page") || "1";
+  const filter = url.searchParams.get("filter") || "";
   const page = parseInt(pageParam, 10);
   const limit = 10;
   const skip = (page - 1) * limit;
@@ -25,7 +27,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (categoryId && !isNaN(Number(categoryId))) {
     where.categoryId = Number(categoryId);
   }
-
+  if(filter === "low-stock") {
+    where.inventoryItems = {
+      some: {
+        quantity: {
+          lte: 10,
+        },
+      },
+    };
+  }
   const [products, totalCount, categories] = await Promise.all([
     db.product.findMany({
       where,
@@ -86,11 +96,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     categories,
     searchTerm,
     categoryId,
+    filter
   });
 };
 
 export default function Products() {
-  const { products, pagination, categories, searchTerm, categoryId } = 
+  const { products, pagination, categories, searchTerm, categoryId, filter } = 
     useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -308,7 +319,7 @@ export default function Products() {
           <div className="flex space-x-1">
             {pagination.page > 1 && (
               <Link
-                to={`/admin/products?page=${pagination.page - 1}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}`}
+                to={`/admin/products?page=${pagination.page - 1}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}${filter ? `&filter=${filter}` : ''}`}
                 className="px-3 py-1 border rounded hover:bg-gray-100 flex items-center"
                 title="Trang trước"
               >
@@ -320,7 +331,7 @@ export default function Products() {
             {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
               <Link
                 key={pageNum}
-                to={`/admin/products?page=${pageNum}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}`}
+                to={`/admin/products?page=${pageNum}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}${filter ? `&filter=${filter}` : ''}`}
                 className={`px-3 py-1 border rounded ${
                   pageNum === pagination.page
                     ? 'bg-blue-500 text-white'
@@ -332,7 +343,7 @@ export default function Products() {
             ))}
             {pagination.page < pagination.totalPages && (
               <Link
-                to={`/admin/products?page=${pagination.page + 1}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}`}
+                to={`/admin/products?page=${pagination.page + 1}${searchTerm ? `&search=${searchTerm}` : ''}${categoryId ? `&category=${categoryId}` : ''}${filter ? `&filter=${filter}` : ''}`}
                 className="px-3 py-1 border rounded hover:bg-gray-100 flex items-center"
                 title="Trang tiếp"
               >
