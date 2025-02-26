@@ -18,10 +18,15 @@
     "@remix-run/node": "^2.15.3",
     "@remix-run/react": "^2.15.3",
     "@remix-run/serve": "^2.15.3",
+    "@types/date-fns": "^2.5.3",
+    "chart.js": "^4.4.8",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.4.7",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.15.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.15.3",

@@ -908,7 +908,9 @@ async function main() {
 
   // 14. InvoiceItem
   const invoiceItems = [];
-  
+  // 15. Transaction
+  const transactions = [];
+
   for (const invoice of invoices) {
     const itemCount = Math.floor(Math.random() * 5) + 1;
     let invoiceTotal = 0;
@@ -966,12 +968,25 @@ async function main() {
         finalAmount: finalAmount,
       },
     });
+
+    const transaction = await prisma.transaction.create({
+      data: {
+        date: invoice.invoiceDate,
+        type: TransactionType.INCOME,
+        amount: finalAmount,
+        description: `Thu tiền từ hóa đơn ${invoice.code}`,
+        userId: invoice.userId,
+        relatedType: TransactionRelatedType.INVOICE,
+        invoiceId: invoice.id,
+      },
+    });
+    
+    transactions.push(transaction);
   }
 
   console.log(`Created ${invoiceItems.length} invoice items`);
 
-  // 15. Transaction
-  const transactions = [];
+  
   
   // Giao dịch cho phiếu nhập
   for (const po of purchaseOrders) {
@@ -998,21 +1013,21 @@ async function main() {
   }
   
   // Giao dịch cho hóa đơn
-  for (const invoice of invoices) {
-    const transaction = await prisma.transaction.create({
-      data: {
-        date: invoice.invoiceDate,
-        type: TransactionType.INCOME,
-        amount: invoice.finalAmount,
-        description: `Thu tiền từ hóa đơn ${invoice.code}`,
-        userId: invoice.userId,
-        relatedType: TransactionRelatedType.INVOICE,
-        invoiceId: invoice.id,
-      },
-    });
+  // for (const invoice of invoices) {
+  //   const transaction = await prisma.transaction.create({
+  //     data: {
+  //       date: invoice.invoiceDate,
+  //       type: TransactionType.INCOME,
+  //       amount: invoice.finalAmount,
+  //       description: `Thu tiền từ hóa đơn ${invoice.code}`,
+  //       userId: invoice.userId,
+  //       relatedType: TransactionRelatedType.INVOICE,
+  //       invoiceId: invoice.id,
+  //     },
+  //   });
     
-    transactions.push(transaction);
-  }
+  //   transactions.push(transaction);
+  // }
   
   // Thêm một số giao dịch khác
   const otherTransactions = [

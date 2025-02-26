@@ -48,8 +48,35 @@ export default function AdminLayout() {
     return location.pathname.startsWith(path);
   };
 
+  
+  // Kiểm tra nếu đang ở trang in hóa đơn
+  const isPrintPage = location.pathname.includes('/print');
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <>
+    {isPrintPage ? <>{/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white shadow-sm z-10">
+          <div className="h-16 px-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-800">
+                Quản lý quầy thuốc
+              </h1>
+            </div>
+          </div>
+        </header>
+        
+        <main className="flex-1 overflow-auto bg-gray-50">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
+        </main>
+      </div></> : (
+      <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div
         className={`${
@@ -294,5 +321,7 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
+    )}
+    </>
   );
 }
