@@ -58,7 +58,7 @@ export default function App() {
         if (userRole === UserRole.ADMIN) {
           navigate("/admin");
         } else if (userRole === UserRole.STAFF) {
-          navigate("/pos");
+          navigate("/sales");
         }
       }
     }

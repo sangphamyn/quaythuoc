@@ -48,5 +48,7 @@ module.exports = {
       };
       addUtilities(newUtilities);
     },
+    require('@tailwindcss/aspect-ratio'),
+    require('@tailwindcss/forms'),
   ],
 };

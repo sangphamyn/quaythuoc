@@ -100,7 +100,7 @@ export class AuthService {
     }
 
     // Tạo session và redirect
-    const redirectTo = role === UserRole.ADMIN ? "/admin" : "/pos";
+    const redirectTo = role === UserRole.ADMIN ? "/admin" : "/sales";
     return createUserSession({
       userId: result.userId,
       role: result.userRole,

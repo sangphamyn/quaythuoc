@@ -20,7 +20,7 @@ export let loader = async ({ request }: LoaderFunctionArgs) => {
   if (await getUserRole(request) == 'ADMIN') {
     return redirect("/admin");
   } else if (await getUserRole(request) == 'STAFF') {
-    return redirect("/pos");
+    return redirect("/sales");
   }
   return {};
 };

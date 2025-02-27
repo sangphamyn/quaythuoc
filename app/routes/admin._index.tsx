@@ -79,7 +79,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Tính tổng doanh thu hôm nay
   const todayRevenue = await db.invoice.aggregate({
     where: {
-      createdAt: {
+      invoiceDate: {
         gte: today
       },
       status: "COMPLETED"
@@ -88,7 +88,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       finalAmount: true
     }
   });
-
   // Lấy số sản phẩm sắp hết hàng (dưới 10 đơn vị)
   const lowStockProducts = await db.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(DISTINCT productId) as count
